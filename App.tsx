@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import type { Chat } from '@google/genai';
 import { Message } from './types';
-import { continueChat } from './services/geminiService';
+import { createChat } from './services/geminiService';
 import Header from './components/Header';
 import ChatMessage from './components/ChatMessage';
 import ChatInput from './components/ChatInput';
@@ -14,6 +15,12 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const chatRef = useRef<Chat | null>(null);
+
+  useEffect(() => {
+    // Initialize the chat session when the component mounts
+    chatRef.current = createChat();
+  }, []);
 
   const scrollToBottom = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -21,26 +28,52 @@ const App: React.FC = () => {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isLoading]);
+  }, [messages]);
 
   const handleSendMessage = async (userInput: string) => {
+    if (!chatRef.current) {
+        setError("Chat is not initialized. Please refresh the page.");
+        return;
+    }
+    
     setError(null);
     const newUserMessage: Message = { role: 'user', text: userInput };
-    const currentMessages = [...messages, newUserMessage];
-    setMessages(currentMessages);
+    setMessages(prevMessages => [...prevMessages, newUserMessage]);
     setIsLoading(true);
 
     try {
-      const history = messages; // Pass the history before adding the new user message
-      const modelResponse = await continueChat(history, userInput);
-      const newModelMessage: Message = { role: 'model', text: modelResponse };
-      setMessages([...currentMessages, newModelMessage]);
+        const stream = await chatRef.current.sendMessageStream({ message: userInput });
+        
+        let modelResponse = '';
+        let firstChunk = true;
+
+        for await (const chunk of stream) {
+            modelResponse += chunk.text;
+            if (firstChunk) {
+                // On first chunk, hide the main spinner and add the new model message to the list
+                setIsLoading(false); 
+                setMessages(prev => [...prev, { role: 'model', text: modelResponse }]);
+                firstChunk = false;
+            } else {
+                // For subsequent chunks, update the text of the last message
+                setMessages(prev => {
+                    const newMessages = [...prev];
+                    newMessages[newMessages.length - 1].text = modelResponse;
+                    return newMessages;
+                });
+            }
+        }
+        
+        // If the stream was empty (e.g., safety block), ensure loading is turned off.
+        if (firstChunk) {
+            setIsLoading(false);
+        }
+
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred.';
+      const displayError = `Sorry, something went wrong: ${errorMessage}`;
       setError(`Failed to get response: ${errorMessage}`);
-      const errorModelMessage: Message = { role: 'model', text: `Sorry, something went wrong: ${errorMessage}` };
-      setMessages([...currentMessages, errorModelMessage]);
-    } finally {
+      setMessages(prevMessages => [...prevMessages, { role: 'model', text: displayError }]);
       setIsLoading(false);
     }
   };
