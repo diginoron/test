@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import type { Chat } from '@google/genai';
 import { Message } from './types';
@@ -9,9 +8,7 @@ import ChatInput from './components/ChatInput';
 import LoadingSpinner from './components/LoadingSpinner';
 
 const App: React.FC = () => {
-  const [messages, setMessages] = useState<Message[]>([
-      { role: 'model', text: 'Hello! How can I assist you today?' }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -19,7 +16,13 @@ const App: React.FC = () => {
 
   useEffect(() => {
     // Initialize the chat session when the component mounts
-    chatRef.current = createChat();
+    try {
+      chatRef.current = createChat();
+      setMessages([{ role: 'model', text: 'Hello! How can I assist you today?' }]);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred during initialization.';
+      setError(errorMessage);
+    }
   }, []);
 
   const scrollToBottom = () => {
@@ -32,7 +35,7 @@ const App: React.FC = () => {
 
   const handleSendMessage = async (userInput: string) => {
     if (!chatRef.current) {
-        setError("Chat is not initialized. Please refresh the page.");
+        setError("Chat is not initialized. Please configure your API key and refresh the page.");
         return;
     }
     
@@ -50,12 +53,10 @@ const App: React.FC = () => {
         for await (const chunk of stream) {
             modelResponse += chunk.text;
             if (firstChunk) {
-                // On first chunk, hide the main spinner and add the new model message to the list
                 setIsLoading(false); 
                 setMessages(prev => [...prev, { role: 'model', text: modelResponse }]);
                 firstChunk = false;
             } else {
-                // For subsequent chunks, update the text of the last message
                 setMessages(prev => {
                     const newMessages = [...prev];
                     newMessages[newMessages.length - 1].text = modelResponse;
@@ -64,7 +65,6 @@ const App: React.FC = () => {
             }
         }
         
-        // If the stream was empty (e.g., safety block), ensure loading is turned off.
         if (firstChunk) {
             setIsLoading(false);
         }
@@ -72,7 +72,7 @@ const App: React.FC = () => {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred.';
       const displayError = `Sorry, something went wrong: ${errorMessage}`;
-      setError(`Failed to get response: ${errorMessage}`);
+      setError(displayError); // Set error state instead of just a message
       setMessages(prevMessages => [...prevMessages, { role: 'model', text: displayError }]);
       setIsLoading(false);
     }
@@ -87,11 +87,16 @@ const App: React.FC = () => {
             <ChatMessage key={index} message={msg} />
           ))}
           {isLoading && <LoadingSpinner />}
-          {error && <div className="text-red-500 text-center my-4">{error}</div>}
+          {error && (
+            <div className="bg-red-900/50 text-red-300 p-4 my-4 rounded-lg shadow-md">
+              <h2 className="font-bold text-lg mb-2">An error occurred:</h2>
+              <p className="font-mono bg-gray-800 p-2 rounded">{error}</p>
+            </div>
+          )}
           <div ref={chatEndRef} />
         </div>
       </main>
-      <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} />
+      <ChatInput onSendMessage={handleSendMessage} isLoading={isLoading} disabled={!!error} />
     </div>
   );
 };

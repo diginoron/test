@@ -3,13 +3,15 @@ import React, { useState } from 'react';
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   isLoading: boolean;
+  disabled?: boolean;
 }
 
-const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
+const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, disabled }) => {
   const [input, setInput] = useState('');
+  const isInputDisabled = isLoading || disabled;
 
   const submitInput = () => {
-    if (input.trim() && !isLoading) {
+    if (input.trim() && !isInputDisabled) {
       onSendMessage(input.trim());
       setInput('');
     }
@@ -34,15 +36,16 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder="Type your message..."
+          placeholder={disabled ? "Application is not configured correctly." : "Type your message..."}
           rows={1}
-          className="flex-grow bg-gray-700 text-white rounded-full py-3 px-5 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-          disabled={isLoading}
+          className="flex-grow bg-gray-700 text-white rounded-full py-3 px-5 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={isInputDisabled}
         />
         <button
           type="submit"
-          disabled={isLoading || !input.trim()}
+          disabled={isInputDisabled || !input.trim()}
           className="bg-blue-600 text-white rounded-full p-3 hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+          aria-label="Send message"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M5 12h14" />
