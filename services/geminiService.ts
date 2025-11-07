@@ -4,7 +4,7 @@ let ai: GoogleGenAI | null = null;
 
 function getAiInstance(): GoogleGenAI {
     if (!process.env.API_KEY) {
-        throw new Error("API_KEY is missing. Please set it in your Vercel project's Environment Variables settings.");
+        throw new Error("API key is not configured. Please ensure the API_KEY environment variable is set.");
     }
     if (!ai) {
         ai = new GoogleGenAI({ apiKey: process.env.API_KEY });

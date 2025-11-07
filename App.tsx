@@ -18,10 +18,11 @@ const App: React.FC = () => {
     // Initialize the chat session when the component mounts
     try {
       chatRef.current = createChat();
-      setMessages([{ role: 'model', text: 'Hello! How can I assist you today?' }]);
+      setMessages([{ role: 'model', text: 'Hello there! I am your AI assistant, powered by Gemini. How can I help you today?' }]);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred during initialization.';
-      setError(errorMessage);
+      console.error(err); // Log the technical error for developers
+      setError("Could not connect to the AI service. Please ensure your API key is configured correctly.");
     }
   }, []);
 
@@ -70,10 +71,11 @@ const App: React.FC = () => {
         }
 
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'An unexpected error occurred.';
-      const displayError = `Sorry, something went wrong: ${errorMessage}`;
-      setError(displayError); // Set error state instead of just a message
-      setMessages(prevMessages => [...prevMessages, { role: 'model', text: displayError }]);
+      console.error(err);
+      // Set a user-friendly error state to be displayed
+      setError("An error occurred while communicating with the AI. Please try again.");
+      // Add an error message to the chat history for context
+      setMessages(prevMessages => [...prevMessages, { role: 'model', text: "I'm sorry, but I wasn't able to process that. Please try again." }]);
       setIsLoading(false);
     }
   };
@@ -88,9 +90,8 @@ const App: React.FC = () => {
           ))}
           {isLoading && <LoadingSpinner />}
           {error && (
-            <div className="bg-red-900/50 text-red-300 p-4 my-4 rounded-lg shadow-md">
-              <h2 className="font-bold text-lg mb-2">An error occurred:</h2>
-              <p className="font-mono bg-gray-800 p-2 rounded">{error}</p>
+            <div className="bg-red-900/50 text-red-300 p-4 my-4 rounded-lg shadow-md text-center">
+              <p className="font-semibold">{error}</p>
             </div>
           )}
           <div ref={chatEndRef} />

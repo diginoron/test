@@ -36,7 +36,7 @@ const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading, disable
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}
-          placeholder={disabled ? "Application is not configured correctly." : "Type your message..."}
+          placeholder={disabled ? "Cannot send messages due to an error." : "Type your message..."}
           rows={1}
           className="flex-grow bg-gray-700 text-white rounded-full py-3 px-5 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none disabled:cursor-not-allowed disabled:opacity-50"
           disabled={isInputDisabled}
