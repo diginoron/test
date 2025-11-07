@@ -1,0 +1,5 @@
+{
+  "name": "Gemini Chat Assistant",
+  "description": "A sleek and responsive chat application powered by the Google Gemini API. It allows users to have interactive conversations with a powerful AI model in a clean, user-friendly interface.",
+  "requestFramePermissions": []
+}
